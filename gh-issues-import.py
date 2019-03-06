@@ -279,18 +279,21 @@ def send_request(which, url, post_data=None):
             username.encode("utf-8") + b":" + password.encode("utf-8")),
         # "Content-Type": "application/json",
         # "Accept": "application/json",
-        "User-Agent": "IQAndreas/github-issues-import"
+        "User-Agent": "alashworth/github-issues-import"
     }
 
     # rate limiting
     r = requests.get('https://api.github.com/rate_limit', headers=headers)
     limits = r.json()['resources']['core']
-    if limits['remaining'] <= 0:
+    if limits['remaining'] <= 1:
         cur_time = time.time()
         delta = limits['reset'] - cur_time
         st = datetime.datetime.utcfromtimestamp(limits['reset']).strftime('%Y-%m-%d %H:%M:%S')
         print("Rate limit reached. Sleeping until {0}".format(st))
         time.sleep(delta + 1)
+    else:
+        pass
+        #time.sleep(1)
     try:
         response = requests.request(method, full_url, json=post_data, headers=headers)
         json_data = response.json()
@@ -389,15 +392,14 @@ def import_comments(comments, issue_number):
             'body': comment['body']
         }
 
-        comment['body'] = format_comment(template_data)
-
-        result_comment = send_request('target', "issues/%s/comments" % issue_number, comment['body'])
+        c = {'body': format_comment(template_data)}
+        result_comment = send_request('target', "issues/%s/comments" % issue_number, c)
         result_comments.append(result_comment)
 
     return result_comments
 
 
-# Will only import milestones and issues that are in use by the imported
+# Will only import milestones and labels that are in use by the imported
 # issues, and do not exist in the target repository
 def import_issues(issue_list):
     State.current = State.GENERATING
@@ -559,3 +561,4 @@ if __name__ == '__main__':
     import_issues(issues)
 
     State.current = State.COMPLETE
+    exit()
