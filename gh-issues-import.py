@@ -292,8 +292,7 @@ def send_request(which, url, post_data=None):
         print("Rate limit reached. Sleeping until {0}".format(st))
         time.sleep(delta + 1)
     else:
-        pass
-        #time.sleep(1)
+        time.sleep(1)
     try:
         response = requests.request(method, full_url, json=post_data, headers=headers)
         json_data = response.json()
@@ -519,8 +518,10 @@ def import_issues(issue_list):
         issue_keys = ['title', 'body', 'assignee', 'milestone', 'labels', 'assignees']
         d = {k: v for k, v in issue.items() if k in issue_keys}
         result_issue = send_request('target', "issues", d)
-        print("Successfully created issue '%s'" % result_issue.get('title', 'UNKNOWN'))
-
+        try:
+            print("Successfully created issue '%s'" % result_issue['title'])
+        except KeyError:
+            print("Bad record return. Possible reason: Github's abuse and rate limiting mechanisms have kicked in.")
         if 'comments' in issue:
             result_comments = import_comments(issue['comments'], result_issue['number'])
             print(" > Successfully added", len(result_comments), "comments.")
@@ -561,4 +562,5 @@ if __name__ == '__main__':
     import_issues(issues)
 
     State.current = State.COMPLETE
-    exit()
+    sys.exit(0)
+
